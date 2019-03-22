@@ -155,7 +155,9 @@ class FlutterPatchTask extends DefaultTask {
         }
     }
 
-
+    /**
+     * 签名函数
+     */
     private static void signZip(Project project, File inFile, SigningConfig signingConfig, File outFile) throws Exception {
         PrivateKey key;
         X509Certificate certificate;
