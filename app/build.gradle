@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'flutter.patch'
+apply plugin: 'flutter.transform'
 
 android {
     compileSdkVersion 27
