@@ -19,13 +19,13 @@ apply plugin: 'flutter.patch'
 生成patch
 
 ```
-gradlew assembleReleaseFlutterPatch -Pbaseline=/path/to/baseline.apk 
+gradlew assembleReleaseFlutterPatch -PbaselineApk=/path/to/baseline.apk 
 ```
 
 or
 
 ```
-gradlew assembleReleaseFlutterPatch -Pbaseline=x:y:z
+gradlew assembleReleaseFlutterPatch -PbaselineApk=x:y:z
 ```
 
 其中x:y:z为基线包maven坐标
