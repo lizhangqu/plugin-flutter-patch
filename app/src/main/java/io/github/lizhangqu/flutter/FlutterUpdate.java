@@ -131,11 +131,11 @@ public class FlutterUpdate {
     @Keep
     public static String getDownloadURL(Context context) {
         ensureConfig(context);
+        checkSign(context);
         if (flutterPatch == null) {
             Log.e("FlutterUpdate", "flutterPatch == null");
             return null;
         }
-        checkSign(context);
         String installedPatchMd5 = getInstalledPatchMd5(context);
         if (installedPatchMd5 != null && installedPatchMd5.equalsIgnoreCase(flutterPatch.md5)) {
             Log.e("FlutterUpdate", "md5 equals:" + flutterPatch.md5);
@@ -148,20 +148,24 @@ public class FlutterUpdate {
     @Keep
     public static String getDownloadMode(Context context) {
         ensureConfig(context);
+        checkSign(context);
         if (flutterPatch == null) {
             Log.e("FlutterUpdate", "flutterPatch == null");
             return null;
         }
+
         return flutterPatch.downloadMode;
     }
 
     @Keep
     public static String getInstallMode(Context context) {
         ensureConfig(context);
+        checkSign(context);
         if (flutterPatch == null) {
             Log.e("FlutterUpdate", "flutterPatch == null");
             return null;
         }
+
         return flutterPatch.installMode;
     }
 
