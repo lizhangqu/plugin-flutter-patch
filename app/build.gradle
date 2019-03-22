@@ -1,0 +1,45 @@
+apply plugin: 'com.android.application'
+apply plugin: 'flutter.patch'
+
+android {
+    compileSdkVersion 27
+    buildToolsVersion "27.0.3"
+
+    defaultConfig {
+        applicationId "io.github.lizhangqu.app"
+        minSdkVersion 14
+        targetSdkVersion 27
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        release {
+            keyAlias 'demo'
+            keyPassword '123456'
+            storeFile project.file('demo.keystore')
+            storePassword '123456'
+        }
+    }
+    buildTypes {
+        debug {
+            debuggable true
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+        release {
+            debuggable false
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:27.1.1'
+    compile 'com.android.support.constraint:constraint-layout:1.1.3'
+}
+
