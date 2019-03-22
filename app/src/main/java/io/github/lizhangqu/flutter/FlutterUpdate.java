@@ -131,11 +131,13 @@ public class FlutterUpdate {
     @Keep
     public static String getDownloadURL(Context context) {
         ensureConfig(context);
+        //校验签名，保障文件来源安全
         checkSign(context);
         if (flutterPatch == null) {
             Log.e("FlutterUpdate", "flutterPatch == null");
             return null;
         }
+        //校验文件md5，防止patch文件重复下载
         String installedPatchMd5 = getInstalledPatchMd5(context);
         if (installedPatchMd5 != null && installedPatchMd5.equalsIgnoreCase(flutterPatch.md5)) {
             Log.e("FlutterUpdate", "md5 equals:" + flutterPatch.md5);
@@ -148,6 +150,7 @@ public class FlutterUpdate {
     @Keep
     public static String getDownloadMode(Context context) {
         ensureConfig(context);
+        //校验签名，保障文件来源安全
         checkSign(context);
         if (flutterPatch == null) {
             Log.e("FlutterUpdate", "flutterPatch == null");
@@ -160,6 +163,7 @@ public class FlutterUpdate {
     @Keep
     public static String getInstallMode(Context context) {
         ensureConfig(context);
+        //校验签名，保障文件来源安全
         checkSign(context);
         if (flutterPatch == null) {
             Log.e("FlutterUpdate", "flutterPatch == null");
