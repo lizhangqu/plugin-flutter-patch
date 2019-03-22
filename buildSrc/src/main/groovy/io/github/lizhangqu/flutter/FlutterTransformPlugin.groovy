@@ -13,6 +13,11 @@ class FlutterTransformPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-       
+        BaseExtension android = project.getExtensions().getByType(BaseExtension.class)
+        def transform = new CustomClassTransform(project, DynamicPatchRedirectTransform.class)
+        android.registerTransform(transform)
+
+        project.getExtensions().create("flutterTransform", FlutterTransformExtension.class)
+
     }
 }
