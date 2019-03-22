@@ -1,5 +1,8 @@
 ### flutter patch gradle plugin
 
+文章链接
+
+[Flutter 动态化探索](http://lizhangqu.github.io/2019/03/22/Flutter-%E5%8A%A8%E6%80%81%E5%8C%96%E6%8E%A2%E7%B4%A2/)
 
 ```
 buildscript {
@@ -7,7 +10,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "io.github.lizhangqu:plugin-flutter-patch:1.0.0" //未发布
+        classpath "io.github.lizhangqu:plugin-flutter-patch:1.0.0"
     }
 }
 
@@ -22,7 +25,7 @@ apply plugin: 'flutter.patch'
 gradlew assembleReleaseFlutterPatch -PbaselineApk=/path/to/baseline.apk 
 ```
 
-or
+或者传递maven坐标
 
 ```
 gradlew assembleReleaseFlutterPatch -PbaselineApk=x:y:z
