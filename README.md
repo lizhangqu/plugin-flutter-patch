@@ -15,3 +15,7 @@ apply plugin: 'flutter.patch'
 
 ```
 
+
+生成patch
+
+gradlew assembleReleaseFlutterPatch -Pbaseline=/path/to/baseline.apk 
