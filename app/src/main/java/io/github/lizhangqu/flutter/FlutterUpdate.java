@@ -100,7 +100,7 @@ public class FlutterUpdate {
     }
 
     private static void deleteFiles(Context context) {
-        final File dataDir = new File(context.getDir("flutter", Context.MODE_PRIVATE).getPath(););
+        final File dataDir = new File(context.getDir("flutter", Context.MODE_PRIVATE).getPath());
         final String[] existingTimestamps = getExistingTimestamps(dataDir);
         if (existingTimestamps == null) {
             return;
