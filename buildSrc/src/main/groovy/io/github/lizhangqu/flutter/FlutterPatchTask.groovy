@@ -112,7 +112,8 @@ class FlutterPatchTask extends DefaultTask {
 
 
         def variantData = variant.getMetaClass().getProperty(variant, 'variantData')
-        def buildTools = variantData.getScope().getGlobalScope().getAndroidBuilder().getTargetInfo().getBuildTools()
+        def androidBuilder = variantData.getScope().getGlobalScope().getAndroidBuilder()
+        def buildTools = androidBuilder.getTargetInfo().getBuildTools()
         def stdout = new ByteArrayOutputStream()
         project.exec {
             commandLine new File(buildTools.getPath(BuildToolInfo.PathId.AAPT)), "dump", "badging", baseLineApk.getAbsolutePath()
