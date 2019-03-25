@@ -28,10 +28,13 @@ class DynamicPatchRedirectTransform implements Consumer<InputStream, OutputStrea
             if (ctClass.isFrozen()) {
                 ctClass.defrost()
             }
-
-
-
             FlutterTransformExtension flutterTransformExtension = project.getExtensions().findByType(FlutterTransformExtension.class)
+            if (classPool.getOrNull(flutterTransformExtension.patchClass) == null) {
+                project.logger.error("${flutterTransformExtension.patchClass} is not in classpath, just ignore.")
+                TransformHelper.copy(inputStream, outputStream)
+                return
+            }
+
             def downloadUrlctMethod = ctClass.getDeclaredMethod("buildUpdateDownloadURL")
             if (downloadUrlctMethod != null) {
                 downloadUrlctMethod.setBody("""
