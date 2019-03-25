@@ -172,6 +172,15 @@ class FlutterPatchTask extends DefaultTask {
         }
     }
 
+    private static <T> T resolveEnumValue(String value, Class<T> type) {
+        for (T constant : type.getEnumConstants()) {
+            if (constant.toString().equalsIgnoreCase(value)) {
+                return constant
+            }
+        }
+        return null
+    }
+
     private void signZip(Project project, File inFile, def signingConfig, File outFile) throws Exception {
         PrivateKey key;
         X509Certificate certificate;
