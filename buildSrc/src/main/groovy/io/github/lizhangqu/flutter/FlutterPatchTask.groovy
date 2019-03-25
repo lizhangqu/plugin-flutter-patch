@@ -258,14 +258,14 @@ class FlutterPatchTask extends DefaultTask {
             )
         }
 
-
+        //noinspection UnnecessaryQualifiedReference
         def creationData = creationDataConstructor.newInstance(outFile,
                 key,
                 certificate,
                 v1SigningEnabled,
                 v2SigningEnabled,
                 null,
-                "Android Gradle " + Version.ANDROID_GRADLE_PLUGIN_VERSION,
+                "Android Gradle " + com.android.builder.model.Version.ANDROID_GRADLE_PLUGIN_VERSION,
                 getVariantScope().getMinSdkVersion().getApiLevel(),
                 compressEnum,
                 new Predicate())
