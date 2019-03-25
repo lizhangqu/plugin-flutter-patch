@@ -140,17 +140,17 @@ class FlutterPatchTask extends DefaultTask {
         SigningConfig signingConfig = variantData.getVariantConfiguration().getSigningConfig()
         File signOut = new File(patchFile.getParentFile(), "signed_" + patchFile.getName())
         //sign patch
-        sign(project, androidBuilder, patchFile, signingConfig, signOut)
+        sign(project, androidBuilder, variantData.getScope(), patchFile, signingConfig, signOut)
     }
 
     /**
      * 对zip文件签名
      */
-    public void sign(Project project, def androidBuilder, File unsignedInputFile, def signingConfig, File signedOutputFile) {
+    public void sign(Project project, def androidBuilder, def variantScope, File unsignedInputFile, def signingConfig, File signedOutputFile) {
         try {
             androidBuilder.signApk(unsignedInputFile, signingConfig, signedOutputFile)
         } catch (Throwable e) {
-            signZip(getProject(), unsignedInputFile, signingConfig, signedOutputFile)
+            signZip(getProject(), variantScope, unsignedInputFile, signingConfig, signedOutputFile)
         }
 
         if (!signedOutputFile.exists()) {
@@ -181,7 +181,7 @@ class FlutterPatchTask extends DefaultTask {
         return null
     }
 
-    private void signZip(Project project, File inFile, def signingConfig, File outFile) throws Exception {
+    private void signZip(Project project, def variantScope, File inFile, def signingConfig, File outFile) throws Exception {
         PrivateKey key;
         X509Certificate certificate;
         boolean v1SigningEnabled;
@@ -266,7 +266,7 @@ class FlutterPatchTask extends DefaultTask {
                 v2SigningEnabled,
                 null,
                 "Android Gradle " + com.android.builder.model.Version.ANDROID_GRADLE_PLUGIN_VERSION,
-                getVariantScope().getMinSdkVersion().getApiLevel(),
+                variantScope.getMinSdkVersion().getApiLevel(),
                 compressEnum,
                 new Predicate())
         def signedJarBuilder
@@ -293,9 +293,9 @@ class FlutterPatchTask extends DefaultTask {
 
             def compress = null
             try {
-                compress = bestAndDefaultDeflateExecutorCompressorClass.getConstructor(Executor.class, double.class).newInstance(compressionExecutor, 1.0D)
+                compress = bestAndDefaultDeflateExecutorCompressorClass.getConstructor(Class.forName("java.util.concurrent.Executor"), double.class).newInstance(compressionExecutor, 1.0D)
             } catch (Exception e) {
-                compress = bestAndDefaultDeflateExecutorCompressorClass.getConstructor(Executor.class, byteTrackerClass, double.class).newInstance(compressionExecutor, options.getTracker(), 1.0D)
+                compress = bestAndDefaultDeflateExecutorCompressorClass.getConstructor(Class.forName("java.util.concurrent.Executor"), byteTrackerClass, double.class).newInstance(compressionExecutor, options.getTracker(), 1.0D)
             }
 
             options.setCompressor(compress);
