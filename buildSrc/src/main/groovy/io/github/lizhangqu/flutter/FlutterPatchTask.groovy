@@ -1,15 +1,7 @@
 package io.github.lizhangqu.flutter
 
-import com.android.build.gradle.AndroidGradleOptions
 import com.android.build.gradle.internal.dsl.SigningConfig
-import com.android.ide.common.signing.CertificateInfo;
 import com.android.ide.common.signing.KeystoreHelper
-import com.android.tools.build.apkzlib.zfile.ApkCreator
-import com.android.tools.build.apkzlib.zfile.ApkCreatorFactory
-import com.android.tools.build.apkzlib.zfile.ApkZFileCreatorFactory
-import com.android.tools.build.apkzlib.zfile.NativeLibrariesPackagingMode
-import com.android.tools.build.apkzlib.zip.ZFileOptions
-import com.android.tools.build.apkzlib.zip.compress.BestAndDefaultDeflateExecutorCompressor
 import com.google.common.base.Preconditions;
 import com.android.sdklib.BuildToolInfo
 import com.google.gson.Gson
@@ -30,7 +22,6 @@ import java.security.cert.X509Certificate
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import java.util.function.Predicate
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import java.util.zip.CRC32
@@ -145,26 +136,48 @@ class FlutterPatchTask extends DefaultTask {
         FileUtils.writeByteArrayToFile(new File(patchDir, 'manifest.json'), manifestJson.getBytes())
         ZipUtil.pack(patchDir, patchFile)
 
-        SigningConfig signingConfig = project.tasks.findByName("package${variant.name.capitalize()}").signingConfig
+        SigningConfig signingConfig = variantData.getVariantConfiguration().getSigningConfig()
         File signOut = new File(patchFile.getParentFile(), "signed_" + patchFile.getName())
         //sign patch
-        signZip(project, patchFile, signingConfig, signOut)
-
-        if (!signOut.exists()) {
-            throw new GradleException("signed patch file is not exist: ${signOut.absolutePath}")
-        }
+        sign(project, androidBuilder, patchFile, signingConfig, signOut)
     }
 
     /**
-     * 签名函数
+     * 对zip文件签名
      */
-    private static void signZip(Project project, File inFile, SigningConfig signingConfig, File outFile) throws Exception {
+    public void sign(Project project, def androidBuilder, File unsignedInputFile, def signingConfig, File signedOutputFile) {
+        try {
+            androidBuilder.signApk(unsignedInputFile, signingConfig, signedOutputFile)
+        } catch (Throwable e) {
+            signZip(getProject(), unsignedInputFile, signingConfig, signedOutputFile)
+        }
+
+        if (!signedOutputFile.exists()) {
+            throw new GradleException("signed output file is not exist: ${signedOutputFile.absolutePath}")
+        }
+
+    }
+
+
+    class Predicate implements java.util.function.Predicate<String>, com.google.common.base.Predicate<String> {
+        @Override
+        boolean apply(String string) {
+            return false
+        }
+
+        @Override
+        boolean test(String string) {
+            return false
+        }
+    }
+
+    private void signZip(Project project, File inFile, def signingConfig, File outFile) throws Exception {
         PrivateKey key;
         X509Certificate certificate;
         boolean v1SigningEnabled;
         boolean v2SigningEnabled;
         if (signingConfig != null && signingConfig.isSigningReady()) {
-            CertificateInfo certificateInfo = KeystoreHelper.getCertificateInfo(
+            def certificateInfo = KeystoreHelper.getCertificateInfo(
                     signingConfig.getStoreType(),
                     Preconditions.checkNotNull(signingConfig.getStoreFile()),
                     Preconditions.checkNotNull(signingConfig.getStorePassword()),
@@ -180,27 +193,84 @@ class FlutterPatchTask extends DefaultTask {
             v1SigningEnabled = false;
             v2SigningEnabled = false;
         }
-        ApkCreatorFactory.CreationData creationData =
-                new ApkCreatorFactory.CreationData(
-                        outFile,
-                        key,
-                        certificate,
-                        v1SigningEnabled,
-                        v2SigningEnabled,
-                        null,
-                        null,
-                        1,
-                        NativeLibrariesPackagingMode.COMPRESSED,
-                        new Predicate<String>() {
-                            @Override
-                            boolean test(String s) {
-                                return false
-                            }
-                        });
-        ApkCreator signedJarBuilder
+        Class creationDataClass = null
+        Class nativeLibrariesPackagingModeClass = null
+        Class zFileOptionsClass = null
+        Class bestAndDefaultDeflateExecutorCompressorClass = null
+        Class apkZFileCreatorFactoryClass = null
+        Class byteTrackerClass = null
+        def compressEnum = null
         try {
-            boolean keepTimestamps = AndroidGradleOptions.keepTimestampsInApk(project);
-            ZFileOptions options = new ZFileOptions();
+            creationDataClass = Class.forName('com.android.apkzlib.zfile.ApkCreatorFactory$CreationData')
+            nativeLibrariesPackagingModeClass = Class.forName('com.android.apkzlib.zfile.NativeLibrariesPackagingMode')
+            zFileOptionsClass = Class.forName("com.android.apkzlib.zip.ZFileOptions")
+            bestAndDefaultDeflateExecutorCompressorClass = Class.forName("com.android.apkzlib.zip.compress.BestAndDefaultDeflateExecutorCompressor")
+            apkZFileCreatorFactoryClass = Class.forName("com.android.apkzlib.zfile.ApkZFileCreatorFactory")
+            byteTrackerClass = Class.forName("com.android.apkzlib.zip.utils.ByteTracker")
+            compressEnum = resolveEnumValue("COMPRESSED", Class.forName("com.android.apkzlib.zfile.NativeLibrariesPackagingMode"))
+        } catch (Exception e) {
+            creationDataClass = Class.forName('com.android.tools.build.apkzlib.zfile.ApkCreatorFactory$CreationData')
+            nativeLibrariesPackagingModeClass = Class.forName('com.android.tools.build.apkzlib.zfile.NativeLibrariesPackagingMode')
+            zFileOptionsClass = Class.forName("com.android.tools.build.apkzlib.zip.ZFileOptions")
+            bestAndDefaultDeflateExecutorCompressorClass = Class.forName("com.android.tools.build.apkzlib.zip.compress.BestAndDefaultDeflateExecutorCompressor")
+            apkZFileCreatorFactoryClass = Class.forName("com.android.tools.build.apkzlib.zfile.ApkZFileCreatorFactory")
+            byteTrackerClass = Class.forName("com.android.tools.build.apkzlib.zip.utils.ByteTracker")
+            compressEnum = resolveEnumValue("COMPRESSED", Class.forName("com.android.tools.build.apkzlib.zfile.NativeLibrariesPackagingMode"))
+
+        }
+
+        def creationDataConstructor = null
+        try {
+            creationDataConstructor = creationDataClass.getDeclaredConstructor(
+                    File.class,
+                    PrivateKey.class,
+                    X509Certificate.class,
+                    boolean.class,
+                    boolean.class,
+                    String.class,
+                    String.class,
+                    int.class,
+                    nativeLibrariesPackagingModeClass,
+                    Class.forName("com.google.common.base.Predicate")
+            )
+        } catch (Exception e) {
+            creationDataConstructor = creationDataClass.getDeclaredConstructor(
+                    File.class,
+                    PrivateKey.class,
+                    X509Certificate.class,
+                    boolean.class,
+                    boolean.class,
+                    String.class,
+                    String.class,
+                    int.class,
+                    nativeLibrariesPackagingModeClass,
+                    Class.forName("java.util.function.Predicate")
+            )
+        }
+
+
+        def creationData = creationDataConstructor.newInstance(outFile,
+                key,
+                certificate,
+                v1SigningEnabled,
+                v2SigningEnabled,
+                null,
+                "Android Gradle " + Version.ANDROID_GRADLE_PLUGIN_VERSION,
+                getVariantScope().getMinSdkVersion().getApiLevel(),
+                compressEnum,
+                new Predicate())
+        def signedJarBuilder
+        try {
+            boolean keepTimestamps = false
+            if (project.hasProperty("android.keepTimestampsInApk")) {
+                Object value = project.property("android.keepTimestampsInApk");
+                if (value instanceof String) {
+                    keepTimestamps = Boolean.parseBoolean((String) value);
+                } else if (value instanceof Boolean) {
+                    keepTimestamps = ((Boolean) value);
+                }
+            }
+            def options = zFileOptionsClass.newInstance();
             options.setNoTimestamps(!keepTimestamps);
             options.setCoverEmptySpaceUsingExtraField(true);
             ThreadPoolExecutor compressionExecutor =
@@ -210,13 +280,17 @@ class FlutterPatchTask extends DefaultTask {
                             100,
                             TimeUnit.MILLISECONDS,
                             new LinkedBlockingDeque<>());
-            options.setCompressor(
-                    new BestAndDefaultDeflateExecutorCompressor(
-                            compressionExecutor,
-                            options.getTracker(),
-                            1.0));
+
+            def compress = null
+            try {
+                compress = bestAndDefaultDeflateExecutorCompressorClass.getConstructor(Executor.class, double.class).newInstance(compressionExecutor, 1.0D)
+            } catch (Exception e) {
+                compress = bestAndDefaultDeflateExecutorCompressorClass.getConstructor(Executor.class, byteTrackerClass, double.class).newInstance(compressionExecutor, options.getTracker(), 1.0D)
+            }
+
+            options.setCompressor(compress);
             options.setAutoSortFiles(true);
-            ApkZFileCreatorFactory factory = new ApkZFileCreatorFactory(options);
+            def factory = apkZFileCreatorFactoryClass.getConstructor(zFileOptionsClass).newInstance(options)
             signedJarBuilder = factory.make(creationData)
             signedJarBuilder.writeZip(
                     inFile,
@@ -229,6 +303,7 @@ class FlutterPatchTask extends DefaultTask {
             }
         }
     }
+
 
     public static class ConfigAction extends TaskConfiguration<FlutterPatchTask> {
         private def variant
