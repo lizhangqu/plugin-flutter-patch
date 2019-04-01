@@ -87,9 +87,20 @@ public class TransformHelper {
         }
         try {
             def javacTask = project.tasks.findByName("compile${variantName.capitalize()}JavaWithJavac")
-            classPool.insertClassPath(javacTask.getDestinationDir().getAbsolutePath())
+            if(javacTask){
+                classPool.insertClassPath(javacTask.getDestinationDir().getAbsolutePath())
+            }
         } catch (Exception e) {
         }
+
+        try {
+            def kotlinTask = project.tasks.findByName("compile${variantName.capitalize()}Kotlin")
+            if(kotlinTask){
+                classPool.insertClassPath(kotlinTask.getDestinationDir().getAbsolutePath())
+            }
+        } catch (Exception e) {
+        }
+
         AppExtension android = project.getExtensions().getByType(AppExtension.class)
         android?.getBootClasspath()?.each {
             try {
