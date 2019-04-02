@@ -108,6 +108,38 @@ public class TransformHelper {
             } catch (Exception e) {
             }
         }
+
+
+        BaseVariant foundVariant = null
+
+        def variants = null;
+        if (project.plugins.hasPlugin('com.android.application')) {
+            variants = project.android.getApplicationVariants()
+        } else if (project.plugins.hasPlugin('com.android.library')) {
+            variants = project.android.getLibraryVariants()
+        }
+
+        variants?.all { BaseVariant variant ->
+            if (variant.getName() == variantName) {
+                foundVariant = variant
+            }
+        }
+
+        if (foundVariant != null) {
+            try {
+                def variantData = foundVariant.getMetaClass().getProperty(foundVariant, 'variantData')
+                variantData?.getScope()?.getTryWithResourceRuntimeSupportJar()?.each {
+                    try {
+                        classPool.insertClassPath(it.absolutePath)
+                    } catch (Exception e) {
+                    }
+                }
+            } catch (Exception e1) {
+
+            }
+
+        }
+
     }
 
     public static void copy(InputStream inputStream, OutputStream outputStream) {
