@@ -1,7 +1,9 @@
 package io.github.lizhangqu.flutter
 
 import com.android.build.gradle.internal.dsl.SigningConfig
+import com.android.builder.model.Version
 import com.android.ide.common.signing.KeystoreHelper
+import com.google.common.base.Optional
 import com.google.common.base.Preconditions;
 import com.android.sdklib.BuildToolInfo
 import com.google.gson.Gson
@@ -229,46 +231,78 @@ class FlutterPatchTask extends DefaultTask {
 
         }
 
+
         def creationDataConstructor = null
         try {
             creationDataConstructor = creationDataClass.getDeclaredConstructor(
                     File.class,
-                    PrivateKey.class,
-                    X509Certificate.class,
-                    boolean.class,
-                    boolean.class,
+                    Class.forName("com.google.common.base.Optional"),
                     String.class,
                     String.class,
-                    int.class,
                     nativeLibrariesPackagingModeClass,
                     Class.forName("com.google.common.base.Predicate")
             )
         } catch (Exception e) {
-            creationDataConstructor = creationDataClass.getDeclaredConstructor(
-                    File.class,
-                    PrivateKey.class,
-                    X509Certificate.class,
-                    boolean.class,
-                    boolean.class,
-                    String.class,
-                    String.class,
-                    int.class,
-                    nativeLibrariesPackagingModeClass,
-                    Class.forName("java.util.function.Predicate")
-            )
+            try {
+                creationDataConstructor = creationDataClass.getDeclaredConstructor(
+                        File.class,
+                        PrivateKey.class,
+                        X509Certificate.class,
+                        boolean.class,
+                        boolean.class,
+                        String.class,
+                        String.class,
+                        int.class,
+                        nativeLibrariesPackagingModeClass,
+                        Class.forName("com.google.common.base.Predicate")
+                )
+            } catch (Exception e1) {
+                creationDataConstructor = creationDataClass.getDeclaredConstructor(
+                        File.class,
+                        PrivateKey.class,
+                        X509Certificate.class,
+                        boolean.class,
+                        boolean.class,
+                        String.class,
+                        String.class,
+                        int.class,
+                        nativeLibrariesPackagingModeClass,
+                        Class.forName("java.util.function.Predicate")
+                )
+            }
         }
 
-        //noinspection UnnecessaryQualifiedReference
-        def creationData = creationDataConstructor.newInstance(outFile,
-                key,
-                certificate,
-                v1SigningEnabled,
-                v2SigningEnabled,
-                null,
-                "Android Gradle " + com.android.builder.model.Version.ANDROID_GRADLE_PLUGIN_VERSION,
-                variantScope.getMinSdkVersion().getApiLevel(),
-                compressEnum,
-                new Predicate())
+
+        def creationData = null
+        try {
+            Class signingOptions = Class.forName("com.android.tools.build.apkzlib.sign.SigningOptions")
+            Optional optional = Optional.of(signingOptions.metaClass.invokeMethod(signingOptions, "builder", null)
+                    .setKey(key)
+                    .setCertificates(certificate)
+                    .setV1SigningEnabled(v1SigningEnabled)
+                    .setV2SigningEnabled(v2SigningEnabled)
+                    .setMinSdkVersion(variantScope.getMinSdkVersion().getApiLevel())
+                    .build())
+            creationData = creationDataConstructor.newInstance(outFile,
+                    optional,
+                    null,
+                    "Android Gradle " + Version.ANDROID_GRADLE_PLUGIN_VERSION,
+                    compressEnum,
+                    new Predicate())
+        } catch (Exception e) {
+            e.printStackTrace()
+            creationData = creationDataConstructor.newInstance(outFile,
+                    key,
+                    certificate,
+                    v1SigningEnabled,
+                    v2SigningEnabled,
+                    null,
+                    "Android Gradle " + Version.ANDROID_GRADLE_PLUGIN_VERSION,
+                    variantScope.getMinSdkVersion().getApiLevel(),
+                    compressEnum,
+                    new Predicate())
+        }
+
         def signedJarBuilder
         try {
             boolean keepTimestamps = false
