@@ -112,10 +112,18 @@ class FlutterPatchTask extends DefaultTask {
         }
         long baselineChecksum = checksum.getValue()
 
-
+        def buildTools
+        def androidBuilder
         def variantData = variant.getMetaClass().getProperty(variant, 'variantData')
-        def androidBuilder = variantData.getScope().getGlobalScope().getAndroidBuilder()
-        def buildTools = androidBuilder.getTargetInfo().getBuildTools()
+        try {
+            androidBuilder = variantData.getScope().getGlobalScope().getAndroidBuilder()
+            buildTools = androidBuilder.getTargetInfo().getBuildTools()
+        } catch (Exception e) {
+            Object gs = variantData.getScope().getGlobalScope()
+            def sdkComponents = gs.metaClass.invokeMethod(gs, "getSdkComponents", null)
+            buildTools = sdkComponents.metaClass.getProperty(sdkComponents, "buildToolInfoProvider").get()
+        }
+
         def stdout = new ByteArrayOutputStream()
         project.exec {
             commandLine new File(buildTools.getPath(BuildToolInfo.PathId.AAPT)), "dump", "badging", baseLineApk.getAbsolutePath()
@@ -287,7 +295,7 @@ class FlutterPatchTask extends DefaultTask {
                     .setCertificates(certificate)
                     .setV1SigningEnabled(v1SigningEnabled)
                     .setV2SigningEnabled(v2SigningEnabled)
-                    .setMinSdkVersion(getVariantScope().getMinSdkVersion().getApiLevel())
+                    .setMinSdkVersion(variantScope.getMinSdkVersion().getApiLevel())
                     .build()
             creationData = creationDataClass.metaClass.invokeMethod(creationDataClass, "builder", null)
                     .setApkPath(outFile)
