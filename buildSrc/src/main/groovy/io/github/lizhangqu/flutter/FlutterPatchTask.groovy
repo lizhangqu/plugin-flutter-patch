@@ -257,50 +257,75 @@ class FlutterPatchTask extends DefaultTask {
                         Class.forName("com.google.common.base.Predicate")
                 )
             } catch (Exception e1) {
-                creationDataConstructor = creationDataClass.getDeclaredConstructor(
-                        File.class,
-                        PrivateKey.class,
-                        X509Certificate.class,
-                        boolean.class,
-                        boolean.class,
-                        String.class,
-                        String.class,
-                        int.class,
-                        nativeLibrariesPackagingModeClass,
-                        Class.forName("java.util.function.Predicate")
-                )
+                try {
+                    creationDataConstructor = creationDataClass.getDeclaredConstructor(
+                            File.class,
+                            PrivateKey.class,
+                            X509Certificate.class,
+                            boolean.class,
+                            boolean.class,
+                            String.class,
+                            String.class,
+                            int.class,
+                            nativeLibrariesPackagingModeClass,
+                            Class.forName("java.util.function.Predicate")
+                    )
+                    creationDataConstructor.setAccessible(true)
+                } catch (Exception e2) {
+
+                }
             }
         }
 
 
         def creationData = null
-        try {
-            Class signingOptions = Class.forName("com.android.tools.build.apkzlib.sign.SigningOptions")
-            Optional optional = Optional.of(signingOptions.metaClass.invokeMethod(signingOptions, "builder", null)
+        if (creationDataConstructor == null) {
+            //agp 3.5.0+
+            Class signingOptionsClass = Class.forName("com.android.tools.build.apkzlib.sign.SigningOptions")
+            def signingOptions = signingOptionsClass.metaClass.invokeMethod(signingOptionsClass, "builder", null)
                     .setKey(key)
                     .setCertificates(certificate)
                     .setV1SigningEnabled(v1SigningEnabled)
                     .setV2SigningEnabled(v2SigningEnabled)
-                    .setMinSdkVersion(variantScope.getMinSdkVersion().getApiLevel())
-                    .build())
-            creationData = creationDataConstructor.newInstance(outFile,
-                    optional,
-                    null,
-                    "Android Gradle " + Version.ANDROID_GRADLE_PLUGIN_VERSION,
-                    compressEnum,
-                    new Predicate())
-        } catch (Exception e) {
-            e.printStackTrace()
-            creationData = creationDataConstructor.newInstance(outFile,
-                    key,
-                    certificate,
-                    v1SigningEnabled,
-                    v2SigningEnabled,
-                    null,
-                    "Android Gradle " + Version.ANDROID_GRADLE_PLUGIN_VERSION,
-                    variantScope.getMinSdkVersion().getApiLevel(),
-                    compressEnum,
-                    new Predicate())
+                    .setMinSdkVersion(getVariantScope().getMinSdkVersion().getApiLevel())
+                    .build()
+            creationData = creationDataClass.metaClass.invokeMethod(creationDataClass, "builder", null)
+                    .setApkPath(outFile)
+                    .setSigningOptions(signingOptions)
+                    .setBuiltBy(null)
+                    .setCreatedBy("Android Gradle " + Version.ANDROID_GRADLE_PLUGIN_VERSION)
+                    .setNativeLibrariesPackagingMode(compressEnum)
+                    .setNoCompressPredicate(new Predicate())
+                    .build()
+        } else {
+            try {
+                Class signingOptions = Class.forName("com.android.tools.build.apkzlib.sign.SigningOptions")
+                Optional optional = Optional.of(signingOptions.metaClass.invokeMethod(signingOptions, "builder", null)
+                        .setKey(key)
+                        .setCertificates(certificate)
+                        .setV1SigningEnabled(v1SigningEnabled)
+                        .setV2SigningEnabled(v2SigningEnabled)
+                        .setMinSdkVersion(variantScope.getMinSdkVersion().getApiLevel())
+                        .build())
+                creationData = creationDataConstructor.newInstance(outFile,
+                        optional,
+                        null,
+                        "Android Gradle " + Version.ANDROID_GRADLE_PLUGIN_VERSION,
+                        compressEnum,
+                        new Predicate())
+            } catch (Exception e) {
+                e.printStackTrace()
+                creationData = creationDataConstructor.newInstance(outFile,
+                        key,
+                        certificate,
+                        v1SigningEnabled,
+                        v2SigningEnabled,
+                        null,
+                        "Android Gradle " + Version.ANDROID_GRADLE_PLUGIN_VERSION,
+                        variantScope.getMinSdkVersion().getApiLevel(),
+                        compressEnum,
+                        new Predicate())
+            }
         }
 
         def signedJarBuilder
