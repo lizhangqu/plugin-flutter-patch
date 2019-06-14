@@ -10,7 +10,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "io.github.lizhangqu:plugin-flutter-patch:1.0.5"
+        classpath "io.github.lizhangqu:plugin-flutter-patch:1.0.6"
     }
 }
 
